@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Search
@@ -59,8 +58,7 @@ fun ConversationListScreen(
     viewModel: MainViewModel,
     onNavigateToChat: (conversationId: String, title: String) -> Unit,
     onNavigateToPermissions: () -> Unit,
-    onNavigateToSettings: () -> Unit,
-    onNavigateToAi: () -> Unit
+    onNavigateToSettings: () -> Unit
 ) {
     val conversations by viewModel.conversations.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -98,13 +96,6 @@ fun ConversationListScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToAi) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "AI Assistant",
-                            tint = MessengerBlue
-                        )
-                    }
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(
                             imageVector = Icons.Default.Settings,
