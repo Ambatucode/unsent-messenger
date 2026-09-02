@@ -9,6 +9,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["conversationId"]),
         Index(value = ["timestamp"]),
+        Index(value = ["notificationKey"]),
         Index(value = ["conversationId", "senderName", "messageText", "timestamp"], unique = true)
     ]
 )
@@ -23,5 +24,6 @@ data class MessageEntity(
     val isUnsent: Boolean = false,
     val packageName: String = "com.facebook.orca",
     val mediaFilePath: String? = null,
-    val mediaType: String? = null // "image", etc.
+    val mediaType: String? = null,
+    val notificationKey: String? = null
 )

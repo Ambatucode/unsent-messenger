@@ -1,5 +1,6 @@
 package com.unsent.messenger.data
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -8,6 +9,8 @@ class MessageRepository(
     private val messageDao: MessageDao,
     private val conversationDao: ConversationDao
 ) {
+
+    private val TAG = "MessageRepository"
 
     val allConversations: Flow<List<ConversationEntity>> = conversationDao.getAllConversations()
 
@@ -32,7 +35,8 @@ class MessageRepository(
         packageName: String,
         isUnsent: Boolean = false,
         mediaFilePath: String? = null,
-        mediaType: String? = null
+        mediaType: String? = null,
+        notificationKey: String? = null
     ) = withContext(Dispatchers.IO) {
         val trimmedText = messageText.trim()
         if (trimmedText.isEmpty() && mediaFilePath == null) return@withContext
@@ -67,7 +71,8 @@ class MessageRepository(
             isUnsent = isUnsent,
             packageName = packageName,
             mediaFilePath = mediaFilePath,
-            mediaType = mediaType
+            mediaType = mediaType,
+            notificationKey = notificationKey
         )
 
         messageDao.insertMessage(message)
@@ -89,9 +94,25 @@ class MessageRepository(
     }
 
     suspend fun markLastMessageAsUnsent(conversationId: String) = withContext(Dispatchers.IO) {
-        val latest = messageDao.getLatestMessage(conversationId)
-        if (latest != null) {
-            messageDao.markAsUnsent(latest.id)
+        // Find the latest message that is NOT already marked unsent
+        val target = messageDao.getLatestActiveMessage(conversationId) ?: messageDao.getLatestMessage(conversationId)
+        if (target != null) {
+            Log.i(TAG, "Marking message ID ${target.id} ('${target.messageText}') as UNSENT in $conversationId")
+            messageDao.markAsUnsent(target.id)
+            val unsentCount = messageDao.countUnsentMessages(conversationId)
+            val totalCount = messageDao.countTotalMessages(conversationId)
+            conversationDao.updateCounts(conversationId, unsentCount, totalCount)
+        }
+    }
+
+    suspend fun markAsUnsentByNotificationKey(key: String, conversationId: String? = null) = withContext(Dispatchers.IO) {
+        val affected = messageDao.markAsUnsentByNotificationKey(key)
+        Log.i(TAG, "Marked by notificationKey $key: $affected row(s) updated")
+
+        if (affected == 0 && conversationId != null) {
+            // Fallback to latest active message in this conversation
+            markLastMessageAsUnsent(conversationId)
+        } else if (conversationId != null) {
             val unsentCount = messageDao.countUnsentMessages(conversationId)
             val totalCount = messageDao.countTotalMessages(conversationId)
             conversationDao.updateCounts(conversationId, unsentCount, totalCount)

@@ -22,6 +22,12 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLatestMessage(conversationId: String): MessageEntity?
 
+    @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND isUnsent = 0 ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLatestActiveMessage(conversationId: String): MessageEntity?
+
+    @Query("SELECT * FROM messages WHERE notificationKey = :key ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getMessageByNotificationKey(key: String): MessageEntity?
+
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND isUnsent = 1 ORDER BY timestamp DESC")
     fun getUnsentMessagesForConversation(conversationId: String): Flow<List<MessageEntity>>
 
@@ -30,6 +36,9 @@ interface MessageDao {
 
     @Query("UPDATE messages SET isUnsent = 1 WHERE id = :id")
     suspend fun markAsUnsent(id: Long)
+
+    @Query("UPDATE messages SET isUnsent = 1 WHERE notificationKey = :key")
+    suspend fun markAsUnsentByNotificationKey(key: String): Int
 
     @Query("UPDATE messages SET isUnsent = 1 WHERE conversationId = :conversationId AND messageText = :messageText")
     suspend fun markAsUnsentByText(conversationId: String, messageText: String)

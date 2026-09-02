@@ -21,7 +21,8 @@ data class ParsedMessage(
     val timestamp: Long,
     val packageName: String,
     val isUnsentNotification: Boolean = false,
-    val imageBitmap: Bitmap? = null
+    val imageBitmap: Bitmap? = null,
+    val notificationKey: String? = null
 )
 
 object NotificationParser {
@@ -40,13 +41,23 @@ object NotificationParser {
     private val UNSENT_KEYWORDS = listOf(
         "unsent a message",
         "unsent a photo",
+        "unsent an attachment",
+        "unsent a video",
         "unsent",
+        "unsend",
         "deleted this message",
         "this message was deleted",
         "message was removed",
+        "message was deleted",
         "retracted a message",
+        "retracted an attachment",
         "nag-unsend ng mensahe",
-        "nag-unsend"
+        "nag-unsend",
+        "binura ang mensahe",
+        "binura ang larawan",
+        "message deleted",
+        "message recalled",
+        "recalled a message"
     )
 
     fun isSupportedPackage(packageName: String): Boolean {
@@ -58,11 +69,12 @@ object NotificationParser {
         val extras = notification.extras ?: return emptyList()
         val packageName = sbn.packageName
         val postTime = sbn.postTime
+        val notificationKey = sbn.key
 
         val results = mutableListOf<ParsedMessage>()
 
         // 1. Extract picture from all possible notification extra keys
-        var attachedBitmap = extractPictureBitmap(context, notification, extras)
+        val attachedBitmap = extractPictureBitmap(context, notification, extras)
 
         // 2. Try extracting MessagingStyle messages (modern Android notifications)
         val messagingStyle = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
@@ -99,7 +111,8 @@ object NotificationParser {
                         timestamp = timestamp,
                         packageName = packageName,
                         isUnsentNotification = isUnsentNotice,
-                        imageBitmap = messageBitmap
+                        imageBitmap = messageBitmap,
+                        notificationKey = notificationKey
                     )
                 )
             }
@@ -146,7 +159,8 @@ object NotificationParser {
                     timestamp = postTime,
                     packageName = packageName,
                     isUnsentNotification = isUnsentNotice,
-                    imageBitmap = attachedBitmap
+                    imageBitmap = attachedBitmap,
+                    notificationKey = notificationKey
                 )
             )
         }
@@ -155,7 +169,6 @@ object NotificationParser {
     }
 
     private fun extractPictureBitmap(context: Context, notification: Notification, extras: Bundle): Bitmap? {
-        // 1. Check EXTRA_PICTURE (Bitmap)
         try {
             extras.get(Notification.EXTRA_PICTURE)?.let { pic ->
                 if (pic is Bitmap) return pic
@@ -164,7 +177,6 @@ object NotificationParser {
             Log.w(TAG, "Failed reading EXTRA_PICTURE", e)
         }
 
-        // 2. Check EXTRA_PICTURE_ICON (API 31+ Icon)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             try {
                 extras.get(Notification.EXTRA_PICTURE_ICON)?.let { icon ->
@@ -178,7 +190,6 @@ object NotificationParser {
             }
         }
 
-        // 3. Check EXTRA_LARGE_ICON_BIG (Bitmap or Icon)
         try {
             extras.get(Notification.EXTRA_LARGE_ICON_BIG)?.let { bigIcon ->
                 if (bigIcon is Bitmap) return bigIcon
@@ -191,11 +202,9 @@ object NotificationParser {
             Log.w(TAG, "Failed reading EXTRA_LARGE_ICON_BIG", e)
         }
 
-        // 4. Check notification.getLargeIcon() if text indicates a photo was sent
         try {
             notification.getLargeIcon()?.let { icon ->
                 val bmp = MediaStorageHelper.iconToBitmap(context, icon)
-                // Only use large icon if it's large enough to be a photo thumbnail (> 120px)
                 if (bmp != null && bmp.width > 120 && bmp.height > 120) {
                     return bmp
                 }
@@ -219,8 +228,8 @@ object NotificationParser {
         }
     }
 
-    private fun isUnsentText(text: String): Boolean {
-        val lower = text.lowercase()
+    fun isUnsentText(text: String): Boolean {
+        val lower = text.lowercase().trim()
         return UNSENT_KEYWORDS.any { lower.contains(it) }
     }
 

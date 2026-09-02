@@ -26,8 +26,6 @@ class MessengerNotificationListener : NotificationListenerService() {
         if (sbn == null) return
 
         val packageName = sbn.packageName ?: return
-
-        // Check if supported messaging app
         if (!NotificationParser.isSupportedPackage(packageName)) {
             return
         }
@@ -39,8 +37,8 @@ class MessengerNotificationListener : NotificationListenerService() {
 
                 for (msg in parsedMessages) {
                     if (msg.isUnsentNotification) {
-                        // Mark the latest message in this conversation as unsent/deleted!
-                        Log.i(TAG, "Detected unsent notification event in ${msg.conversationTitle}")
+                        // Mark the latest real message in this conversation as unsent!
+                        Log.i(TAG, "⚡ Detected unsend notification in '${msg.conversationTitle}' -> Marking message as UNSENT")
                         repository.markLastMessageAsUnsent(msg.conversationId)
                     } else {
                         // Save image to disk if present
@@ -50,7 +48,7 @@ class MessengerNotificationListener : NotificationListenerService() {
                             Log.d(TAG, "Saved image to: $savedImagePath")
                         }
 
-                        // Store the incoming message
+                        // Store incoming message with notification key
                         Log.d(TAG, "Captured message from ${msg.senderName}: ${msg.messageText}")
                         repository.saveIncomingMessage(
                             conversationId = msg.conversationId,
@@ -61,12 +59,13 @@ class MessengerNotificationListener : NotificationListenerService() {
                             packageName = msg.packageName,
                             isUnsent = false,
                             mediaFilePath = savedImagePath,
-                            mediaType = if (savedImagePath != null) "image" else null
+                            mediaType = if (savedImagePath != null) "image" else null,
+                            notificationKey = msg.notificationKey
                         )
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error handling notification", e)
+                Log.e(TAG, "Error handling notification posted", e)
             }
         }
     }
@@ -78,7 +77,27 @@ class MessengerNotificationListener : NotificationListenerService() {
         val packageName = sbn.packageName ?: return
         if (!NotificationParser.isSupportedPackage(packageName)) return
 
-        Log.d(TAG, "Notification removed for $packageName with reason $reason")
+        // Reason 8 (REASON_APP_CANCEL) = Messenger retracted the notification due to unsend!
+        // Reason 1 (REASON_CLICK)
+        // Reason 2 (REASON_CANCEL = user swiped away)
+        // Reason 3 (REASON_CANCEL_ALL = user cleared all)
+        Log.d(TAG, "Notification removed for $packageName with reason $reason (key: ${sbn.key})")
+
+        // When reason is REASON_APP_CANCEL (8), or when the app retracts it
+        if (reason == REASON_APP_CANCEL || reason == 8) {
+            serviceScope.launch {
+                try {
+                    val repository = UnsentApp.instance.repository
+                    val parsed = NotificationParser.parse(applicationContext, sbn)
+                    val convId = parsed.firstOrNull()?.conversationId
+
+                    Log.i(TAG, "⚡ Notification retracted by app ($packageName, key ${sbn.key}) -> Marking as UNSENT")
+                    repository.markAsUnsentByNotificationKey(sbn.key, convId)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error handling notification removal", e)
+                }
+            }
+        }
     }
 
     override fun onDestroy() {
