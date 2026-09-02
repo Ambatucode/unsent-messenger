@@ -25,6 +25,9 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE conversationId = :conversationId AND isUnsent = 1 ORDER BY timestamp DESC")
     fun getUnsentMessagesForConversation(conversationId: String): Flow<List<MessageEntity>>
 
+    @Query("UPDATE messages SET isUnsent = :isUnsent WHERE id = :id")
+    suspend fun setUnsentStatus(id: Long, isUnsent: Boolean)
+
     @Query("UPDATE messages SET isUnsent = 1 WHERE id = :id")
     suspend fun markAsUnsent(id: Long)
 

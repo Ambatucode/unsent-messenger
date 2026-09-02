@@ -45,7 +45,6 @@ class MessageRepository(
             val isRecent = (timestamp - latest.timestamp) < 15000
 
             if (isPhotoPlaceholder && isRecent) {
-                // Update the existing placeholder message with the downloaded photo!
                 messageDao.updateMediaFile(latest.id, mediaFilePath, mediaType ?: "image")
                 return@withContext
             }
@@ -71,14 +70,11 @@ class MessageRepository(
             mediaType = mediaType
         )
 
-        // Insert message
         messageDao.insertMessage(message)
 
-        // Count unsent and total
         val unsentCount = messageDao.countUnsentMessages(conversationId)
         val totalCount = messageDao.countTotalMessages(conversationId)
 
-        // Upsert conversation summary
         val conversation = ConversationEntity(
             conversationId = conversationId,
             title = conversationTitle,
@@ -100,6 +96,13 @@ class MessageRepository(
             val totalCount = messageDao.countTotalMessages(conversationId)
             conversationDao.updateCounts(conversationId, unsentCount, totalCount)
         }
+    }
+
+    suspend fun toggleMessageUnsent(messageId: Long, isUnsent: Boolean, conversationId: String) = withContext(Dispatchers.IO) {
+        messageDao.setUnsentStatus(messageId, isUnsent)
+        val unsentCount = messageDao.countUnsentMessages(conversationId)
+        val totalCount = messageDao.countTotalMessages(conversationId)
+        conversationDao.updateCounts(conversationId, unsentCount, totalCount)
     }
 
     suspend fun deleteConversation(conversationId: String) = withContext(Dispatchers.IO) {

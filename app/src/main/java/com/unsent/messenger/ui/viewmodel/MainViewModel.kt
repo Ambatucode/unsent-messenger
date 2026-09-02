@@ -66,6 +66,12 @@ class MainViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     }
 
+    fun toggleMessageUnsent(messageId: Long, isUnsent: Boolean, conversationId: String) {
+        viewModelScope.launch {
+            repository.toggleMessageUnsent(messageId, isUnsent, conversationId)
+        }
+    }
+
     fun deleteConversation(conversationId: String) {
         viewModelScope.launch {
             repository.deleteConversation(conversationId)

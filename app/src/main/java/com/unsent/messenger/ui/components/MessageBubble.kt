@@ -23,13 +23,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -67,6 +67,7 @@ import java.util.Locale
 fun MessageBubble(
     message: MessageEntity,
     onDeleteMessage: (Long) -> Unit,
+    onToggleUnsent: (Long, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -109,7 +110,7 @@ fun MessageBubble(
                         if (message.isUnsent) UnsentRedBg else MaterialTheme.colorScheme.surfaceVariant
                     )
                     .then(
-                        if (message.isUnsent) Modifier.border(1.dp, UnsentRedBorder, RoundedCornerShape(16.dp))
+                        if (message.isUnsent) Modifier.border(1.5.dp, UnsentRedBorder, RoundedCornerShape(16.dp))
                         else Modifier
                     )
                     .combinedClickable(
@@ -119,7 +120,7 @@ fun MessageBubble(
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Column {
-                    // Unsent Tag
+                    // Unsent Tag Banner
                     if (message.isUnsent) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -129,15 +130,15 @@ fun MessageBubble(
                                 imageVector = Icons.Default.Warning,
                                 contentDescription = "Unsent",
                                 tint = UnsentRed,
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = "MESSAGE UNSENT / RETRACTED BY SENDER",
+                                text = "⚠️ MESSAGE UNSENT / DELETED BY SENDER",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = UnsentRed,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 9.sp
+                                    fontSize = 10.sp
                                 )
                             )
                         }
@@ -158,13 +159,13 @@ fun MessageBubble(
                         Spacer(modifier = Modifier.height(6.dp))
                     }
 
-                    // Message Body Text (if not empty or if distinct from photo tag)
+                    // Message Body Text
                     if (message.messageText.isNotBlank() && (imageBitmap == null || message.messageText != "📷 [Photo]")) {
                         Text(
                             text = message.messageText,
                             style = MaterialTheme.typography.bodyLarge.copy(
-                                color = if (message.isUnsent) Color(0xFF330000) else MaterialTheme.colorScheme.onSurface,
-                                fontWeight = if (message.isUnsent) FontWeight.Medium else FontWeight.Normal
+                                color = if (message.isUnsent) Color(0xFF4A0E0C) else MaterialTheme.colorScheme.onSurface,
+                                fontWeight = if (message.isUnsent) FontWeight.SemiBold else FontWeight.Normal
                             )
                         )
                     }
@@ -175,7 +176,7 @@ fun MessageBubble(
                     Text(
                         text = formattedTime,
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = if (message.isUnsent) UnsentRed.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (message.isUnsent) UnsentRed.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 10.sp
                         ),
                         modifier = Modifier.align(Alignment.End)
@@ -200,6 +201,23 @@ fun MessageBubble(
                         }
                     )
                 }
+
+                // Manual Toggle Unsent Status
+                DropdownMenuItem(
+                    text = { Text(if (message.isUnsent) "Unmark as Unsent" else "Mark as Unsent") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (message.isUnsent) Icons.Default.BookmarkBorder else Icons.Default.Bookmark,
+                            contentDescription = null,
+                            tint = UnsentRed
+                        )
+                    },
+                    onClick = {
+                        onToggleUnsent(message.id, !message.isUnsent)
+                        showMenu = false
+                    }
+                )
+
                 DropdownMenuItem(
                     text = { Text("Delete This Message", color = UnsentRed) },
                     leadingIcon = { Icon(Icons.Default.Delete, contentDescription = "Delete", tint = UnsentRed) },
