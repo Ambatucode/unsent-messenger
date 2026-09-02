@@ -3,10 +3,13 @@ package com.unsent.messenger.service
 import android.app.Notification
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.service.notification.StatusBarNotification
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.unsent.messenger.data.MediaStorageHelper
 
@@ -22,6 +25,8 @@ data class ParsedMessage(
 )
 
 object NotificationParser {
+
+    private const val TAG = "NotificationParser"
 
     private val SUPPORTED_PACKAGES = setOf(
         "com.facebook.orca",      // Facebook Messenger
@@ -56,17 +61,17 @@ object NotificationParser {
 
         val results = mutableListOf<ParsedMessage>()
 
-        // Check if there is an attached picture in notification extras
-        val attachedBitmap = extractPictureBitmap(context, extras)
+        // 1. Extract picture from all possible notification extra keys
+        var attachedBitmap = extractPictureBitmap(context, notification, extras)
 
-        // 1. Try extracting MessagingStyle messages (modern Android notifications)
+        // 2. Try extracting MessagingStyle messages (modern Android notifications)
         val messagingStyle = NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(notification)
         if (messagingStyle != null) {
             val convTitle = messagingStyle.conversationTitle?.toString()
             val userDisplayName = messagingStyle.user.name?.toString() ?: "User"
 
             for (msg in messagingStyle.messages) {
-                val text = msg.text?.toString() ?: ""
+                var text = msg.text?.toString() ?: ""
                 val sender = msg.person?.name?.toString()
                     ?: if (messagingStyle.isGroupConversation) "Group Member" else (convTitle ?: userDisplayName)
                 val timestamp = if (msg.timestamp > 0) msg.timestamp else postTime
@@ -74,6 +79,16 @@ object NotificationParser {
                 val convId = generateConversationId(packageName, title)
 
                 val isUnsentNotice = isUnsentText(text)
+
+                // Try extracting photo from MessagingStyle.Message data URI (content:// stream)
+                var messageBitmap = attachedBitmap
+                if (messageBitmap == null && msg.dataUri != null) {
+                    messageBitmap = loadBitmapFromUri(context, msg.dataUri)
+                }
+
+                if (text.isBlank() && messageBitmap != null) {
+                    text = "📷 [Photo]"
+                }
 
                 results.add(
                     ParsedMessage(
@@ -84,7 +99,7 @@ object NotificationParser {
                         timestamp = timestamp,
                         packageName = packageName,
                         isUnsentNotification = isUnsentNotice,
-                        imageBitmap = attachedBitmap
+                        imageBitmap = messageBitmap
                     )
                 )
             }
@@ -94,14 +109,18 @@ object NotificationParser {
             }
         }
 
-        // 2. Fallback to standard extras (Title, Text, BigText)
+        // 3. Fallback to standard extras (Title, Text, BigText)
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
             ?: extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)?.toString()
             ?: "Unknown Chat"
 
-        val text = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
+        var text = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
             ?: extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
             ?: ""
+
+        if (text.isBlank() && attachedBitmap != null) {
+            text = "📷 [Photo]"
+        }
 
         if (text.isNotBlank() || attachedBitmap != null) {
             val convId = generateConversationId(packageName, title)
@@ -135,28 +154,69 @@ object NotificationParser {
         return results
     }
 
-    private fun extractPictureBitmap(context: Context, extras: Bundle): Bitmap? {
+    private fun extractPictureBitmap(context: Context, notification: Notification, extras: Bundle): Bitmap? {
         // 1. Check EXTRA_PICTURE (Bitmap)
-        extras.get(Notification.EXTRA_PICTURE)?.let { pic ->
-            if (pic is Bitmap) return pic
+        try {
+            extras.get(Notification.EXTRA_PICTURE)?.let { pic ->
+                if (pic is Bitmap) return pic
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed reading EXTRA_PICTURE", e)
         }
 
         // 2. Check EXTRA_PICTURE_ICON (API 31+ Icon)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            extras.get(Notification.EXTRA_PICTURE_ICON)?.let { icon ->
-                if (icon is Icon) {
-                    return MediaStorageHelper.iconToBitmap(context, icon)
+            try {
+                extras.get(Notification.EXTRA_PICTURE_ICON)?.let { icon ->
+                    if (icon is Icon) {
+                        val bmp = MediaStorageHelper.iconToBitmap(context, icon)
+                        if (bmp != null) return bmp
+                    }
                 }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed reading EXTRA_PICTURE_ICON", e)
             }
         }
 
-        // 3. Check EXTRA_BIG_TEXT / Large icon if it looks like a media preview
-        extras.get(Notification.EXTRA_LARGE_ICON_BIG)?.let { bigIcon ->
-            if (bigIcon is Bitmap) return bigIcon
-            if (bigIcon is Icon) return MediaStorageHelper.iconToBitmap(context, bigIcon)
+        // 3. Check EXTRA_LARGE_ICON_BIG (Bitmap or Icon)
+        try {
+            extras.get(Notification.EXTRA_LARGE_ICON_BIG)?.let { bigIcon ->
+                if (bigIcon is Bitmap) return bigIcon
+                if (bigIcon is Icon) {
+                    val bmp = MediaStorageHelper.iconToBitmap(context, bigIcon)
+                    if (bmp != null) return bmp
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed reading EXTRA_LARGE_ICON_BIG", e)
+        }
+
+        // 4. Check notification.getLargeIcon() if text indicates a photo was sent
+        try {
+            notification.getLargeIcon()?.let { icon ->
+                val bmp = MediaStorageHelper.iconToBitmap(context, icon)
+                // Only use large icon if it's large enough to be a photo thumbnail (> 120px)
+                if (bmp != null && bmp.width > 120 && bmp.height > 120) {
+                    return bmp
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed reading getLargeIcon", e)
         }
 
         return null
+    }
+
+    private fun loadBitmapFromUri(context: Context, uri: Uri?): Bitmap? {
+        if (uri == null) return null
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                BitmapFactory.decodeStream(inputStream)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not open dataUri stream for photo: $uri", e)
+            null
+        }
     }
 
     private fun isUnsentText(text: String): Boolean {

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MessageDao {
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessage(message: MessageEntity): Long
 
     @Update
@@ -30,6 +30,9 @@ interface MessageDao {
 
     @Query("UPDATE messages SET isUnsent = 1 WHERE conversationId = :conversationId AND messageText = :messageText")
     suspend fun markAsUnsentByText(conversationId: String, messageText: String)
+
+    @Query("UPDATE messages SET mediaFilePath = :filePath, mediaType = :mediaType WHERE id = :id")
+    suspend fun updateMediaFile(id: Long, filePath: String, mediaType: String)
 
     @Query("DELETE FROM messages WHERE conversationId = :conversationId")
     suspend fun deleteConversationMessages(conversationId: String)

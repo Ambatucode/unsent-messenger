@@ -3,7 +3,6 @@ package com.unsent.messenger.data
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import java.io.File
 
 class MessageRepository(
     private val messageDao: MessageDao,
@@ -38,10 +37,24 @@ class MessageRepository(
         val trimmedText = messageText.trim()
         if (trimmedText.isEmpty() && mediaFilePath == null) return@withContext
 
-        val displaySnippet = if (trimmedText.isNotEmpty()) {
-            trimmedText
-        } else if (mediaFilePath != null) {
+        // Check if the latest message was a placeholder "sent a photo" without image from < 15 seconds ago
+        val latest = messageDao.getLatestMessage(conversationId)
+        if (latest != null && mediaFilePath != null && latest.mediaFilePath == null) {
+            val isPhotoPlaceholder = latest.messageText.contains("sent a photo", ignoreCase = true) ||
+                    latest.messageText == "📷 [Photo]"
+            val isRecent = (timestamp - latest.timestamp) < 15000
+
+            if (isPhotoPlaceholder && isRecent) {
+                // Update the existing placeholder message with the downloaded photo!
+                messageDao.updateMediaFile(latest.id, mediaFilePath, mediaType ?: "image")
+                return@withContext
+            }
+        }
+
+        val displaySnippet = if (mediaFilePath != null) {
             "📷 [Photo]"
+        } else if (trimmedText.isNotEmpty()) {
+            trimmedText
         } else {
             "Message"
         }
