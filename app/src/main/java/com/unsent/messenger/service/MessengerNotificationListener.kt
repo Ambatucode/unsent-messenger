@@ -32,7 +32,7 @@ class MessengerNotificationListener : NotificationListenerService() {
 
         serviceScope.launch {
             try {
-                val repository = UnsentApp.instance.repository
+                val repository = UnsentApp.getRepository(applicationContext)
                 val parsedMessages = NotificationParser.parse(applicationContext, sbn)
 
                 for (msg in parsedMessages) {
@@ -87,7 +87,7 @@ class MessengerNotificationListener : NotificationListenerService() {
         if (reason == REASON_APP_CANCEL || reason == 8) {
             serviceScope.launch {
                 try {
-                    val repository = UnsentApp.instance.repository
+                    val repository = UnsentApp.getRepository(applicationContext)
                     val parsed = NotificationParser.parse(applicationContext, sbn)
                     val convId = parsed.firstOrNull()?.conversationId
 

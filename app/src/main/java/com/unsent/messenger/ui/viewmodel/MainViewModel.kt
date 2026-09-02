@@ -1,10 +1,11 @@
 package com.unsent.messenger.ui.viewmodel
 
+import android.app.Application
 import android.content.ComponentName
 import android.content.Context
 import android.os.PowerManager
 import android.provider.Settings
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.unsent.messenger.UnsentApp
 import com.unsent.messenger.data.ConversationEntity
@@ -23,8 +24,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel(
-    private val repository: MessageRepository = UnsentApp.instance.repository
-) : ViewModel() {
+    application: Application
+) : AndroidViewModel(application) {
+
+    private val repository: MessageRepository = UnsentApp.getRepository(application)
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -50,15 +53,19 @@ class MainViewModel(
     }
 
     fun checkPermissions(context: Context) {
-        val enabledListeners = Settings.Secure.getString(
-            context.contentResolver,
-            "enabled_notification_listeners"
-        )
-        val myListener = ComponentName(context, MessengerNotificationListener::class.java).flattenToString()
-        _isNotificationAccessGranted.value = enabledListeners != null && enabledListeners.contains(myListener)
+        try {
+            val enabledListeners = Settings.Secure.getString(
+                context.contentResolver,
+                "enabled_notification_listeners"
+            )
+            val myListener = ComponentName(context, MessengerNotificationListener::class.java).flattenToString()
+            _isNotificationAccessGranted.value = enabledListeners != null && enabledListeners.contains(myListener)
 
-        val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        _isBatteryOptimizationIgnored.value = pm?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+            val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            _isBatteryOptimizationIgnored.value = pm?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+        } catch (e: Exception) {
+            // Safe fallback
+        }
     }
 
     fun getMessagesForConversation(conversationId: String): StateFlow<List<MessageEntity>> {
