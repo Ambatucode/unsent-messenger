@@ -1,7 +1,7 @@
 <div align="center">
   <img src="art/logo.jpg" alt="Unsent Messenger Logo" width="180" style="border-radius: 28px;" />
   <h1>Unsent Messenger</h1>
-  <p><strong>The Anti-Unsend Countermeasure for Android</strong></p>
+  <p><strong>The Anti-Unsend Countermeasure & AI Utility for Android</strong></p>
 
   <p>
     <a href="https://github.com/Ambatucode/unsent-messenger/actions/workflows/build-apk.yml"><img src="https://github.com/Ambatucode/unsent-messenger/actions/workflows/build-apk.yml/badge.svg" alt="Build Status" /></a>
@@ -12,7 +12,7 @@
 
 ---
 
-An Android counter-tool built with **Kotlin**, **Jetpack Compose (Material 3)**, and **Room Database** that captures and logs incoming Messenger notifications locally on your device, allowing you to view messages and photos even after the sender has clicked **"Unsend for everyone"**.
+An Android counter-tool built with **Kotlin**, **Jetpack Compose (Material 3)**, and **Room Database** that captures and logs incoming Messenger notifications locally on your device, allowing you to view messages and photos even after the sender has clicked **"Unsend for everyone"**, plus an on-demand **Gemini AI Assistant & Form Solver**!
 
 ---
 
@@ -30,7 +30,8 @@ You can download the latest compiled `.apk` directly to your Android phone from 
 
 - ⚡ **Real-time Capture**: Intercepts notifications from Facebook Messenger (`com.facebook.orca`), Messenger Lite, Instagram Direct, and WhatsApp.
 - 🚫 **Unsent Message & Photo Detection**: Automatically detects and highlights messages and images retracted by the sender.
-- 🖼️ **In-App Photo Viewer**: Full-screen zoomable photo viewer for saved images.
+- 🤖 **On-Demand Gemini AI Assistant**: Built-in AI tool to answer forms, solve questions, and draft smart replies with your own free Google AI Studio API key.
+- 🖼️ **In-App Photo Viewer & On-Demand Reveal**: Full-screen zoomable photo viewer with on-demand tap-to-reveal privacy.
 - 📱 **Cross-Platform Sender Support**: Works when the sender is using **iOS (iPhone/iPad)**, Android, Mac, or Windows Web.
 - 🔒 **100% Private & On-Device**: All chat logs and images are stored locally in an offline SQLite/Room database. No servers, no tracking, 0 cloud uploads.
 - 🔋 **Reboot & Battery Resilient**: Auto-rebinds upon device reboot (`BOOT_COMPLETED`) with battery optimization exemption support.
@@ -43,6 +44,7 @@ You can download the latest compiled `.apk` directly to your Android phone from 
 - **Language**: Kotlin 2.1
 - **UI Framework**: Jetpack Compose (Material 3)
 - **Database**: AndroidX Room (SQLite) with KSP
+- **AI Integration**: Google Gemini 1.5 Flash REST API
 - **Async & Reactive**: Kotlin Coroutines & `Flow`
 - **Core Service**: Android `NotificationListenerService` (`android.permission.BIND_NOTIFICATION_LISTENER_SERVICE`)
 - **CI/CD Pipeline**: GitHub Actions (`assembleDebug` on push)
@@ -57,17 +59,5 @@ When you open the app on your phone:
    - Tap **Enable Notification Access** -> Toggle **ON** for `Unsent Messenger`.
 2. **Disable Battery Optimization**:
    - Tap **Ignore Battery Optimization** so Android won't shut down the service in the background.
-
----
-
-## 🧪 Testing It Out
-
-### Method 1: Using the Built-in Simulator
-1. Open the app -> Tap the **Settings (⚙️)** icon in the top right.
-2. Tap **"Simulate Test Messenger Unsend"**.
-3. Go back to the main chat list -> You will see a test conversation showing a normal message, an unsent photo, and an unsent text highlighted in red!
-
-### Method 2: Real Messenger Test
-1. Have a friend (or another account on iPhone or Android) send you a text or photo on Messenger while your phone is on the home screen or locked.
-2. Have them unsend it ("Unsend for everyone").
-3. Open **Unsent Messenger** -> The deleted text and photo will be preserved in your chat history!
+3. **Activate AI Assistant (Optional)**:
+   - Tap the **✨ AI icon** in the top bar -> Paste your free [Google AI Studio Gemini API Key](https://aistudio.google.com/app/apikey).

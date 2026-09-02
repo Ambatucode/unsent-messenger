@@ -8,6 +8,7 @@ sealed class Screen(val route: String) {
     object Conversations : Screen("conversations")
     object Permissions : Screen("permissions")
     object Settings : Screen("settings")
+    object AiAssistant : Screen("ai_assistant")
 
     object ChatDetail : Screen("chat_detail/{conversationId}/{title}") {
         fun createRoute(conversationId: String, title: String): String {

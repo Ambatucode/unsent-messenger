@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.unsent.messenger.ui.navigation.Screen
+import com.unsent.messenger.ui.screens.AiAssistantScreen
 import com.unsent.messenger.ui.screens.ChatDetailScreen
 import com.unsent.messenger.ui.screens.ConversationListScreen
 import com.unsent.messenger.ui.screens.PermissionScreen
@@ -73,6 +74,9 @@ fun AppNavigation(viewModel: MainViewModel) {
                 },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToAi = {
+                    navController.navigate(Screen.AiAssistant.route)
                 }
             )
         }
@@ -111,6 +115,12 @@ fun AppNavigation(viewModel: MainViewModel) {
                 onNavigateToPermissions = {
                     navController.navigate(Screen.Permissions.route)
                 },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.AiAssistant.route) {
+            AiAssistantScreen(
                 onBack = { navController.popBackStack() }
             )
         }
