@@ -1,10 +1,18 @@
-# Unsent Messenger (Android App)
+<div align="center">
+  <img src="art/logo.jpg" alt="Unsent Messenger Logo" width="180" style="border-radius: 28px;" />
+  <h1>Unsent Messenger</h1>
+  <p><strong>The Anti-Unsend Countermeasure for Android</strong></p>
 
-[![Build Android Debug APK](https://github.com/Ambatucode/unsent-messenger/actions/workflows/build-apk.yml/badge.svg)](https://github.com/Ambatucode/unsent-messenger/actions/workflows/build-apk.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Latest Release](https://img.shields.io/github/v/release/Ambatucode/unsent-messenger?label=Latest%20APK&color=brightgreen)](https://github.com/Ambatucode/unsent-messenger/releases/tag/latest)
+  <p>
+    <a href="https://github.com/Ambatucode/unsent-messenger/actions/workflows/build-apk.yml"><img src="https://github.com/Ambatucode/unsent-messenger/actions/workflows/build-apk.yml/badge.svg" alt="Build Status" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
+    <a href="https://github.com/Ambatucode/unsent-messenger/releases/tag/latest"><img src="https://img.shields.io/github/v/release/Ambatucode/unsent-messenger?label=Latest%20APK&color=brightgreen" alt="Latest Release" /></a>
+  </p>
+</div>
 
-An Android application built with **Kotlin**, **Jetpack Compose (Material 3)**, and **Room Database** that captures and logs incoming Messenger notifications locally on your device, allowing you to view messages and photos even after the sender has clicked **"Unsend for everyone"**.
+---
+
+An Android counter-tool built with **Kotlin**, **Jetpack Compose (Material 3)**, and **Room Database** that captures and logs incoming Messenger notifications locally on your device, allowing you to view messages and photos even after the sender has clicked **"Unsend for everyone"**.
 
 ---
 

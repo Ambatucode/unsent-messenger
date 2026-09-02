@@ -3,7 +3,26 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Hooded Anonymous Silhouette -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,20 C35.22,20 20,33.43 20,50 C20,59.45 25.13,67.8 33.15,73.18 L30.2,85.5 L42.38,80.12 C46.03,81.18 49.92,81.76 54,81.76 C72.78,81.76 88,68.33 88,50 C88,33.43 72.78,20 54,20 Z M56.9,59.85 L47.45,49.8 L29,59.85 L49.3,38.25 L58.75,48.3 L77.2,38.25 L56.9,59.85 Z"/>
+        android:fillColor="#0084FF"
+        android:pathData="M54,28 C45,28 39,36 39,46 C39,52 42,57 45,60 C38,64 34,70 33,78 L75,78 C74,70 70,64 63,60 C66,57 69,52 69,46 C69,36 63,28 54,28 Z"/>
+    
+    <!-- Face Shadow Mask -->
+    <path
+        android:fillColor="#12161A"
+        android:pathData="M54,36 C48,36 45,42 45,49 C45,54 48,58 54,60 C60,58 63,54 63,49 C63,42 60,36 54,36 Z"/>
+
+    <!-- Outer Counter/Prohibition Circle (Neon Red / Pink) -->
+    <path
+        android:strokeColor="#FF3B30"
+        android:strokeWidth="5"
+        android:pathData="M54,54 m-32,0 a32,32 0 1,0 64,0 a32,32 0 1,0 -64,0"/>
+
+    <!-- Diagonal Counter Slash -->
+    <path
+        android:strokeColor="#FF3B30"
+        android:strokeWidth="5"
+        android:pathData="M31.37,31.37 L76.63,76.63"/>
 </vector>
