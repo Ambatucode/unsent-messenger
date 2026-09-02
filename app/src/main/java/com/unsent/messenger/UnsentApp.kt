@@ -21,12 +21,11 @@ class UnsentApp : Application() {
     }
 
     companion object {
-        @Volatile
         private var instance: UnsentApp? = null
 
         fun getRepository(context: Context): MessageRepository {
             val app = instance
-            if (app != null && ::repository.isInitialized) {
+            if (app != null) {
                 return app.repository
             }
             val db = AppDatabase.getDatabase(context.applicationContext)
