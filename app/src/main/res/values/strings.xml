@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Unsent Messenger</string>
+    <string name="notification_service_label">Unsent Messenger Capture Service</string>
+</resources>
