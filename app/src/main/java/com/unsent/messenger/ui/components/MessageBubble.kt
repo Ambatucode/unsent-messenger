@@ -3,12 +3,8 @@ package com.unsent.messenger.ui.components
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -32,14 +28,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -56,7 +51,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -68,8 +62,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.unsent.messenger.data.MessageEntity
 import com.unsent.messenger.ui.theme.MessengerBlue
-import com.unsent.messenger.ui.theme.MessengerGradientEnd
-import com.unsent.messenger.ui.theme.MessengerGradientStart
 import com.unsent.messenger.ui.theme.UnsentRed
 import com.unsent.messenger.ui.theme.UnsentRedBg
 import com.unsent.messenger.ui.theme.UnsentRedBorder
@@ -94,18 +86,20 @@ fun MessageBubble(
     var showMenu by remember { mutableStateOf(false) }
     var showFullImageDialog by remember { mutableStateOf(false) }
 
-    // On-Demand Reveal State
     var isRevealed by remember(message.id) { mutableStateOf(false) }
     var isLoadingMedia by remember { mutableStateOf(false) }
 
     val formattedTime = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(message.timestamp))
 
     val hasMedia = !message.mediaFilePath.isNullOrEmpty()
+    val isPhotoPlaceholder = message.messageText.contains("sent a photo", ignoreCase = true) ||
+            message.messageText.contains("sent an image", ignoreCase = true) ||
+            message.messageText == "📷 [Photo]"
+
     val mediaFile = remember(message.mediaFilePath) {
         if (hasMedia) File(message.mediaFilePath!!) else null
     }
 
-    // Decode bitmap on-demand only when revealed
     val imageBitmap = remember(isRevealed, message.mediaFilePath) {
         if (isRevealed && mediaFile != null && mediaFile.exists()) {
             BitmapFactory.decodeFile(mediaFile.absolutePath)?.asImageBitmap()
@@ -170,10 +164,9 @@ fun MessageBubble(
                         }
                     }
 
-                    // 📸 ON-DEMAND PHOTO PLACEHOLDER & REVEAL
+                    // 1. If photo file is attached
                     if (hasMedia) {
                         if (!isRevealed) {
-                            // Sleek placeholder card asking user to reveal
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(0.85f)
@@ -192,7 +185,7 @@ fun MessageBubble(
                                         if (!isLoadingMedia) {
                                             isLoadingMedia = true
                                             scope.launch {
-                                                delay(250) // smooth transition
+                                                delay(250)
                                                 isLoadingMedia = false
                                                 isRevealed = true
                                             }
@@ -200,9 +193,7 @@ fun MessageBubble(
                                     }
                                     .padding(14.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
                                             .size(44.dp)
@@ -253,7 +244,6 @@ fun MessageBubble(
                             }
                             Spacer(modifier = Modifier.height(6.dp))
                         } else {
-                            // Render Revealed Image
                             if (imageBitmap != null) {
                                 Image(
                                     bitmap = imageBitmap,
@@ -268,10 +258,71 @@ fun MessageBubble(
                                 Spacer(modifier = Modifier.height(6.dp))
                             }
                         }
+                    } else if (isPhotoPlaceholder) {
+                        // 2. Encrypted / E2EE Photo Notice Card
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.88f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (message.isUnsent) UnsentRed.copy(alpha = 0.08f)
+                                    else MaterialTheme.colorScheme.surface
+                                )
+                                .border(
+                                    1.dp,
+                                    if (message.isUnsent) UnsentRedBorder.copy(alpha = 0.5f)
+                                    else MaterialTheme.colorScheme.outlineVariant,
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .padding(12.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (message.isUnsent) UnsentRed.copy(alpha = 0.15f)
+                                            else MaterialTheme.colorScheme.surfaceVariant
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (message.isUnsent) Icons.Default.CameraAlt else Icons.Default.Lock,
+                                        contentDescription = "Photo Attachment",
+                                        tint = if (message.isUnsent) UnsentRed else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (message.isUnsent) "📷 Unsent Photo Attachment" else "📷 Photo Attachment",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = if (message.isUnsent) UnsentRed else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = if (message.isUnsent) "Sender deleted this photo from chat"
+                                        else "Photo sent (Encrypted by Messenger)",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
 
-                    // Message Body Text
-                    if (message.messageText.isNotBlank() && (!hasMedia || message.messageText != "📷 [Photo]")) {
+                    // Normal message text if not a photo placeholder
+                    if (message.messageText.isNotBlank() && !isPhotoPlaceholder && (!hasMedia || message.messageText != "📷 [Photo]")) {
                         Text(
                             text = message.messageText,
                             style = MaterialTheme.typography.bodyLarge.copy(
